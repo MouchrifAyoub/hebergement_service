@@ -1,12 +1,12 @@
 from app.models.demande_hebergement import DemandeHebergement, StatutDemande
-from sqlalchemy import select, and_
-import uuid
-from sqlalchemy import insert
+from app.schemas.demande_hebergement import DemandeHebergementCreate
+from sqlalchemy import select, and_, insert
 from databases import Database
 from uuid import UUID
 from datetime import datetime
-from typing import Optional
-from app.schemas.demande_hebergement import DemandeHebergementCreate
+from typing import Optional, List
+import uuid
+
 
 class DemandeHebergementRepository:
     def __init__(self, db: Database):
@@ -27,7 +27,7 @@ class DemandeHebergementRepository:
 
         row = await self.db.fetch_one(query)
         return DemandeHebergement(**row)
-    
+
     async def check_duplicate_period(self, demandeur_id: UUID, date_arrivee, date_depart) -> bool:
         query = select(DemandeHebergement).where(
             and_(
@@ -44,4 +44,11 @@ class DemandeHebergementRepository:
         result = await self.db.fetch_one(query)
         print("→ Résultat trouvé :", result)
         return result is not None
-    
+
+    async def get_all_by_demandeur_id(self, demandeur_id: UUID, statut: Optional[str] = None) -> List[DemandeHebergement]:
+        query = select(DemandeHebergement).where(DemandeHebergement.demandeur_id == demandeur_id)
+
+        if statut:
+            query = query.where(DemandeHebergement.statut == statut)
+
+        return await self.db.fetch_all(query)
