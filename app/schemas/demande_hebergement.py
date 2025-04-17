@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import enum
 
 
@@ -34,3 +34,13 @@ class DemandeHebergementOut(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class DemandeHebergementUpdate(BaseModel):
+    """
+    Champs modifiables d'une demande d'hébergement tant qu'elle est en attente.
+    """
+    date_arrivee: Optional[date] = None
+    date_depart: Optional[date] = None
+    motif: Optional[str] = None
+    justificatif_url: Optional[str] = None

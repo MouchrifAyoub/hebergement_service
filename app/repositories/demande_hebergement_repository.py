@@ -1,11 +1,17 @@
-from app.models.demande_hebergement import DemandeHebergement, StatutDemande
-from app.schemas.demande_hebergement import DemandeHebergementCreate
-from sqlalchemy import select, and_, insert
-from databases import Database
-from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 import uuid
+import logging
+
+from databases import Database
+from sqlalchemy import select, and_, insert
+
+from app.config.settings import POSTGRES_SCHEMA
+from app.models.demande_hebergement import DemandeHebergement, StatutDemande
+from app.schemas.demande_hebergement import DemandeHebergementCreate
+
+logger = logging.getLogger(__name__)
 
 
 class DemandeHebergementRepository:
@@ -40,9 +46,9 @@ class DemandeHebergementRepository:
                 DemandeHebergement.date_depart > date_arrivee
             )
         )
-        print("→ Vérification d'une demande existante...")
+        logger.info("→ Vérification d'une demande existante...")
         result = await self.db.fetch_one(query)
-        print("→ Résultat trouvé :", result)
+        logger.info(f"→ Résultat trouvé : {result}")
         return result is not None
 
     async def get_all_by_demandeur_id(self, demandeur_id: UUID, statut: Optional[str] = None) -> List[DemandeHebergement]:
@@ -52,3 +58,37 @@ class DemandeHebergementRepository:
             query = query.where(DemandeHebergement.statut == statut)
 
         return await self.db.fetch_all(query)
+
+    async def get_by_id_for_user(self, demande_id: UUID, demandeur_id: UUID):
+        query = f"""
+            SELECT * FROM {POSTGRES_SCHEMA}.demande_hebergement
+            WHERE id = :demande_id AND demandeur_id = :demandeur_id
+        """
+        return await self.db.fetch_one(query, values={"demande_id": demande_id, "demandeur_id": demandeur_id})
+
+    async def update_demande(self, demande_id: UUID, data: dict):
+        # Sécuriser les champs autorisés
+        allowed_fields = {"motif", "date_arrivee", "date_depart", "justificatif_url"}
+        update_data = {k: v for k, v in data.items() if k in allowed_fields}
+
+        if not update_data:
+            return None  # Rien à mettre à jour
+
+        set_clause = ", ".join([f"{key} = :{key}" for key in update_data.keys()])
+        query = f"""
+            UPDATE {POSTGRES_SCHEMA}.demande_hebergement
+            SET {set_clause}
+            WHERE id = :demande_id AND statut = 'EN_ATTENTE'
+            RETURNING *
+        """
+        values = {"demande_id": demande_id, **update_data}
+        return await self.db.fetch_one(query, values=values)
+
+    async def annuler_demande(self, demande_id: UUID):
+        query = f"""
+            UPDATE {POSTGRES_SCHEMA}.demande_hebergement
+            SET statut = 'ANNULEE'
+            WHERE id = :demande_id AND statut = 'EN_ATTENTE'
+            RETURNING *
+        """
+        return await self.db.fetch_one(query, values={"demande_id": demande_id})
