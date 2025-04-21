@@ -6,7 +6,8 @@ from app.config.database import database
 from app.schemas.demande_hebergement import (
     DemandeHebergementCreate,
     DemandeHebergementOut,
-    DemandeHebergementUpdate
+    DemandeHebergementUpdate,
+    TraitementDemandeIn
 )
 from app.services.demande_hebergement_service import DemandeHebergementService
 from app.repositories.demande_hebergement_repository import DemandeHebergementRepository
@@ -65,3 +66,23 @@ async def annuler_demande_hebergement(id: UUID = Path(...)):
         return {"message": "Demande annulée avec succès", "data": result}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/traiter-demande/{id}", response_model=DemandeHebergementOut)
+async def traiter_demande(
+    id: UUID = Path(...),
+    payload: TraitementDemandeIn = Body(...),
+):
+    repository = DemandeHebergementRepository(db=database)
+    service = DemandeHebergementService(repository)
+    try:
+        result = await service.traiter_demande(id, payload)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@router.get("/demandes-en-attente", response_model=List[DemandeHebergementOut])
+async def get_demandes_en_attente():
+    repository = DemandeHebergementRepository(db=database)
+    service = DemandeHebergementService(repository)
+    demandes = await service.get_demandes_en_attente()
+    return [DemandeHebergementOut(**dict(d)) for d in demandes]

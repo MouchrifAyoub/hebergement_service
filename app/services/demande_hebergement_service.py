@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from typing import List, Optional
 from uuid import UUID
 
-from app.schemas.demande_hebergement import DemandeHebergementCreate, DemandeHebergementOut
+from app.schemas.demande_hebergement import DemandeHebergementCreate, DemandeHebergementOut, TraitementDemandeIn
 from app.repositories.demande_hebergement_repository import DemandeHebergementRepository
 from app.utils.logger import logger
 
@@ -60,3 +60,39 @@ class DemandeHebergementService:
             raise ValueError("Impossible d’annuler une demande déjà affectée à une ligne budgétaire.")
 
         return await self.repository.annuler_demande(demande_id)
+    
+    async def traiter_demande(self, demande_id: UUID, data: TraitementDemandeIn):
+        demande = await self.repository.get_by_id(demande_id)
+        if not demande:
+            raise ValueError("Demande introuvable.")
+
+        if demande["statut"] != "EN_ATTENTE":
+            raise ValueError("La demande a déjà été traitée.")
+
+        # Vérification métier
+        if data.decision == "REFUSEE" and not data.motif_refus:
+            raise ValueError("Un motif est requis pour refuser une demande.")
+
+        if data.decision == "VALIDEE":
+            if not data.prise_en_charge_validee and not data.code_ligne_budgetaire:
+                raise ValueError("Aucune prise en charge. Ligne budgétaire obligatoire.")
+
+        # Mise à jour de la demande
+        update_data = {
+            "statut": data.decision,
+            "hebergement_id": data.hebergement_id,
+            "code_ligne_budgetaire": data.code_ligne_budgetaire,
+            "prise_en_charge_validee": data.prise_en_charge_validee,
+            "motif_refus": data.motif_refus
+        }
+
+        updated = await self.repository.update_demande(demande_id, update_data)
+
+        if updated is None:
+            raise ValueError("Demande non trouvée")
+
+        updated_dict = dict(updated)  # ou parse_obj(updated)
+        return DemandeHebergementOut(**updated_dict)
+    
+    async def get_demandes_en_attente(self):
+        return await self.repository.get_demandes_en_attente()

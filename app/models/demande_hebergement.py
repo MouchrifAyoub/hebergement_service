@@ -1,12 +1,10 @@
 import uuid
 from datetime import date, datetime
-from sqlalchemy import Column, String, Date, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, String, Date, DateTime, Enum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from app.config.settings import POSTGRES_SCHEMA
-from sqlalchemy.ext.declarative import declarative_base
+from app.models.base import Base  # ✅ Base partagée
 import enum
-
-Base = declarative_base()
 
 class StatutDemande(enum.Enum):
     EN_ATTENTE = "EN_ATTENTE"
@@ -28,3 +26,6 @@ class DemandeHebergement(Base):
     justificatif_url = Column(String, nullable=True)
     code_ligne_budgetaire = Column(String, nullable=True)
     demandeur_id = Column(UUID(as_uuid=True), nullable=False)
+    motif_refus = Column(String, nullable=True)
+    prise_en_charge_validee = Column(Boolean, nullable=True)
+    hebergement_id = Column(UUID(as_uuid=True), ForeignKey(f"{POSTGRES_SCHEMA}.hebergement.id"), nullable=True)

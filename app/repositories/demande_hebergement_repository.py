@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class DemandeHebergementRepository:
     def __init__(self, db: Database):
         self.db = db
+        self.schema = POSTGRES_SCHEMA
 
     async def create(self, demande: DemandeHebergementCreate, demandeur_id: UUID) -> DemandeHebergement:
         query = insert(DemandeHebergement).values(
@@ -61,24 +62,36 @@ class DemandeHebergementRepository:
 
     async def get_by_id_for_user(self, demande_id: UUID, demandeur_id: UUID):
         query = f"""
-            SELECT * FROM {POSTGRES_SCHEMA}.demande_hebergement
+            SELECT * FROM {self.schema}.demande_hebergement
             WHERE id = :demande_id AND demandeur_id = :demandeur_id
         """
         return await self.db.fetch_one(query, values={"demande_id": demande_id, "demandeur_id": demandeur_id})
 
+    # Utilisé par le traitement administratif (pas par le demandeur)
+    async def get_by_id(self, demande_id: UUID):
+        query = f"""
+            SELECT * FROM {self.schema}.demande_hebergement
+            WHERE id = :demande_id
+        """
+        return await self.db.fetch_one(query, values={"demande_id": demande_id})
+
     async def update_demande(self, demande_id: UUID, data: dict):
-        # Sécuriser les champs autorisés
-        allowed_fields = {"motif", "date_arrivee", "date_depart", "justificatif_url"}
+        # Mise à jour administrative ou utilisateur selon appel
+        allowed_fields = {
+            "motif", "date_arrivee", "date_depart", "justificatif_url",
+            "statut", "motif_refus", "prise_en_charge_validee",
+            "code_ligne_budgetaire", "hebergement_id"
+        }
         update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
         if not update_data:
-            return None  # Rien à mettre à jour
+            return None
 
         set_clause = ", ".join([f"{key} = :{key}" for key in update_data.keys()])
         query = f"""
-            UPDATE {POSTGRES_SCHEMA}.demande_hebergement
+            UPDATE {self.schema}.demande_hebergement
             SET {set_clause}
-            WHERE id = :demande_id AND statut = 'EN_ATTENTE'
+            WHERE id = :demande_id
             RETURNING *
         """
         values = {"demande_id": demande_id, **update_data}
@@ -86,9 +99,17 @@ class DemandeHebergementRepository:
 
     async def annuler_demande(self, demande_id: UUID):
         query = f"""
-            UPDATE {POSTGRES_SCHEMA}.demande_hebergement
+            UPDATE {self.schema}.demande_hebergement
             SET statut = 'ANNULEE'
             WHERE id = :demande_id AND statut = 'EN_ATTENTE'
             RETURNING *
         """
         return await self.db.fetch_one(query, values={"demande_id": demande_id})
+    
+    async def get_demandes_en_attente(self):
+        query = f"""
+            SELECT * FROM {POSTGRES_SCHEMA}.demande_hebergement
+            WHERE statut = 'EN_ATTENTE'
+            ORDER BY date_soumission DESC
+        """
+        return await self.db.fetch_all(query)

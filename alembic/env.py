@@ -1,8 +1,8 @@
 import os
 from logging.config import fileConfig
-from app.models.demande_hebergement import Base
-from sqlalchemy import engine_from_config, pool
+
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # 🔁 Chargement des variables d'environnement
 from dotenv import load_dotenv
@@ -15,8 +15,13 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 🎯 Metadata ciblée (pas encore définie si on n'a pas encore de models)
-target_metadata = Base.metadata
+# 📦 Import des modèles pour exposer les metadata
+from app.models.demande_hebergement import DemandeHebergement
+from app.models.hebergement import Hebergement
+
+# 🎯 Ciblage des métadonnées partagées
+# Tous les modèles utilisent le même Base, donc on peut récupérer metadata depuis n’importe lequel
+target_metadata = DemandeHebergement.metadata
 
 # 🏷️ Chargement des infos de connexion
 POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA", "public")
@@ -39,10 +44,6 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Migrations en mode online (avec vraie connexion)"""
-
-    # injection dans la section sqlalchemy.url du fichier ini
-    #config.set_main_option("sqlalchemy.url", DATABASE_URL)
-
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",

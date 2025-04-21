@@ -3,8 +3,9 @@ name = "hebergement-service"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Rento",email = "amouchrif2@gmail.com"}
+    {name = "Ayoub Mouchrif",email = "ayoub.mouchrif-ext@um6p.ma"}
 ]
+packages = [{ include = "app" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -28,3 +29,6 @@ alembic = "^1.15.2"
 pytest = "^8.3.5"
 httpx = "^0.28.1"
 uvicorn = "^0.34.0"
+
+[tool.poetry]
+package-mode = false
