@@ -174,8 +174,10 @@ json-log-formatter = ">=0.5.2,<2.0.0"
 tenacity = ">=8.2.2,<10.0.0"
 
 [package.source]
-type = "directory"
-url = "../common"
+type = "git"
+url = "https://github.com/MouchrifAyoub/common.git"
+reference = "HEAD"
+resolved_reference = "00a340bb08f1f29b37bb4a16a857a6a38a3383a8"
 
 [[package]]
 name = "databases"
@@ -1330,4 +1332,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "5fb23bb1daf111e0d84f538b0a33a606bc86384772baae97951c457e08746ea0"
+content-hash = "491e316003c91079543c6e668a83bebcdfb4e3bce600599df947f87cbb5153e1"

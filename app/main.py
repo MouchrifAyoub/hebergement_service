@@ -17,8 +17,7 @@
 
 
 
-import sys
-sys.path.append('../common')
+
 
 from fastapi import FastAPI
 from app.api import hebergement_controller
@@ -30,7 +29,7 @@ from common.logging_config import setup_logging
 from common.config import settings
 import asyncio
 
-app = FastAPI()
+app = FastAPI(title="Hebergement Service", root_path="/hebergement")
 
 @app.on_event("startup")
 async def startup():

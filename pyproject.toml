@@ -20,7 +20,7 @@ dependencies = [
     "tenacity (>=9.1.2,<10.0.0)",
     "dynaconf (>=3.2.10,<4.0.0)",
     "json-log-formatter (>=1.1.1,<2.0.0)",
-    "common @ file:///home/ayoub/common"
+    "common @ git+https://github.com/MouchrifAyoub/common.git"
 ]
 
 
