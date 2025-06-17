@@ -12,18 +12,22 @@ class InviteRepository:
         self.db = db
         self.schema = POSTGRES_SCHEMA
 
-    async def create(self, demande_id: UUID, nom: str, prenom: str, fonction: str, date_arrivee, date_depart) -> Invite:
+    async def create(self, demande_id: UUID, nom: str, prenom: str, fonction: str,
+                     date_arrivee, date_depart, email: str, telephone: str, type_hebergement: str) -> Invite:
         query = insert(Invite).values(
             id=uuid.uuid4(),
             demande_id=demande_id,
             nom=nom,
             prenom=prenom,
             fonction=fonction,
+            email=email,
+            telephone=telephone,
+            type_hebergement=type_hebergement,
             date_arrivee=date_arrivee,
             date_depart=date_depart
         ).returning(Invite)
         row = await self.db.fetch_one(query)
-        return Invite(**row)
+        return Invite(**dict(row))
 
     async def get_by_demande_id(self, demande_id: UUID) -> List[Invite]:
         query = select(Invite).where(Invite.demande_id == demande_id)

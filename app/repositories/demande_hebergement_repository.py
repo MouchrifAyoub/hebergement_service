@@ -33,7 +33,8 @@ class DemandeHebergementRepository:
         ).returning(DemandeHebergement)
 
         row = await self.db.fetch_one(query)
-        return DemandeHebergement(**row)
+        return DemandeHebergement(**dict(row))  # ✅ converti proprement
+
 
     async def check_duplicate_period(self, demandeur_id: UUID, date_arrivee, date_depart) -> bool:
         query = select(DemandeHebergement).where(

@@ -35,3 +35,7 @@ class LigneBudgetaireRepository:
         ).returning(LigneBudgetaire)
         row = await self.db.fetch_one(query)
         return LigneBudgetaire(**row) if row else None
+    
+    async def get_all(self):
+        query = select(LigneBudgetaire)
+        return await self.db.fetch_all(query)
