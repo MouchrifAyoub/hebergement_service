@@ -4,18 +4,12 @@ from sqlalchemy import Column, String, Date, DateTime, Enum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from app.config.settings import POSTGRES_SCHEMA
 from app.models.base import Base  # ✅ Base partagée
-import enum
+from app.enums.statut_demande import StatutDemande
 
-class StatutDemande(enum.Enum):
-    EN_ATTENTE = "EN_ATTENTE"
-    VALIDEE = "VALIDEE"
-    REFUSEE = "REFUSEE"
-    ANNULEE = "ANNULEE"
-    ARCHIVEE = "ARCHIVEE"
 
 class DemandeHebergement(Base):
     __tablename__ = "demande_hebergement"
-    __table_args__ = {"schema": POSTGRES_SCHEMA}
+    __table_args__ = {"schema": "hebergement"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     date_soumission = Column(DateTime, default=datetime.utcnow)

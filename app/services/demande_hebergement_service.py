@@ -28,8 +28,10 @@ class DemandeHebergementService:
         if has_duplicate:
             raise ValueError("Une autre demande active existe déjà pour cette période.")
 
-        created = await self.repository.create(demande, demandeur_id)
-        return DemandeHebergementOut(**created.__dict__)
+        # Passer le schéma et l'ID séparément au repository
+        created = await self.repository.create(demande=demande, demandeur_id=demandeur_id)
+
+        return DemandeHebergementOut.model_validate(created)
 
     async def get_my_demandes(self, demandeur_id: UUID, statut: Optional[str] = None) -> List[DemandeHebergementOut]:
         demandes = await self.repository.get_all_by_demandeur_id(demandeur_id, statut)
@@ -69,7 +71,6 @@ class DemandeHebergementService:
         if demande["statut"] != "EN_ATTENTE":
             raise ValueError("La demande a déjà été traitée.")
 
-        # Vérification métier
         if data.decision == "REFUSEE" and not data.motif_refus:
             raise ValueError("Un motif est requis pour refuser une demande.")
 
@@ -77,7 +78,6 @@ class DemandeHebergementService:
             if not data.prise_en_charge_validee and not data.code_ligne_budgetaire:
                 raise ValueError("Aucune prise en charge. Ligne budgétaire obligatoire.")
 
-        # Mise à jour de la demande
         update_data = {
             "statut": data.decision,
             "hebergement_id": data.hebergement_id,
@@ -87,12 +87,10 @@ class DemandeHebergementService:
         }
 
         updated = await self.repository.update_demande(demande_id, update_data)
-
         if updated is None:
             raise ValueError("Demande non trouvée")
 
-        updated_dict = dict(updated)  # ou parse_obj(updated)
-        return DemandeHebergementOut(**updated_dict)
+        return DemandeHebergementOut(**updated._mapping)
     
     async def get_demandes_en_attente(self):
         return await self.repository.get_demandes_en_attente()

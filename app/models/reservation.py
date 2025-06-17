@@ -6,7 +6,7 @@ from app.models.base import Base
 
 class Reservation(Base):
     __tablename__ = "reservation"
-    __table_args__ = {"schema": POSTGRES_SCHEMA}
+    __table_args__ = {"schema": "hebergement"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     invite_id = Column(UUID(as_uuid=True), ForeignKey(f"{POSTGRES_SCHEMA}.invite.id"), nullable=False)

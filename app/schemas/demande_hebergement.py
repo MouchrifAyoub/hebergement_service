@@ -3,14 +3,8 @@ from typing import Optional, Literal
 from uuid import UUID
 from pydantic import BaseModel
 import enum
+from app.enums.statut_demande import StatutDemande
 
-
-class StatutDemande(str, enum.Enum):
-    EN_ATTENTE = "EN_ATTENTE"
-    VALIDEE = "VALIDEE"
-    REFUSEE = "REFUSEE"
-    ANNULEE = "ANNULEE"
-    ARCHIVEE = "ARCHIVEE"
 
 
 class DemandeHebergementCreate(BaseModel):

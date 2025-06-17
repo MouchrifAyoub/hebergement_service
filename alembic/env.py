@@ -1,49 +1,60 @@
 import os
 from logging.config import fileConfig
-
+from app.models import metadata
 from alembic import context
 from sqlalchemy import engine_from_config, pool
-
-# 🔁 Chargement des variables d'environnement
 from dotenv import load_dotenv
+
+# Chargement des variables d'environnement (.env)
 load_dotenv()
 
-# 📜 Config Alembic
+# Config générale Alembic
 config = context.config
-
-# 📊 Logging Alembic
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 📦 Import des modèles pour exposer les metadata
-from app.models.demande_hebergement import DemandeHebergement
-from app.models.hebergement import Hebergement
+# Import des modèles (schéma hebergement)
+from app.models import (
+    demande_hebergement,
+    hebergement,
+    ligne_budgetaire,
+    invite,
+    reservation
+)
 
-# 🎯 Ciblage des métadonnées partagées
-# Tous les modèles utilisent le même Base, donc on peut récupérer metadata depuis n’importe lequel
-target_metadata = DemandeHebergement.metadata
+# Ciblage des metadata à exposer à Alembic
+target_metadata = metadata
 
-# 🏷️ Chargement des infos de connexion
-POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA", "public")
+# Chargement dynamique des paramètres de connexion
+POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA", "hebergement")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Filtrage strict du schéma pour éviter les objets d'autres microservices
+def include_object(obj, name, type_, reflected, compare_to):
+    # On cible uniquement les tables du bon schéma
+    if type_ == "table":
+        return getattr(obj, "schema", None) == POSTGRES_SCHEMA
+    # On laisse les autres objets (indexes, enums, ...) passer
+    return True
+
+# Mode OFFLINE (pas de connexion active)
 def run_migrations_offline() -> None:
-    """Migrations en mode offline (sans connexion active)"""
     context.configure(
         url=DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         version_table_schema=POSTGRES_SCHEMA,
-        include_schemas=True
+        include_schemas=True,
+        include_object=include_object,
+        compare_type=True
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
-
+# Mode ONLINE (connexion active)
 def run_migrations_online() -> None:
-    """Migrations en mode online (avec vraie connexion)"""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
@@ -56,13 +67,14 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             version_table_schema=POSTGRES_SCHEMA,
             include_schemas=True,
+            include_object=include_object,
+            compare_type=True
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
-
-# ⚙️ Lancer le bon mode
+# Lancement selon le mode
 if context.is_offline_mode():
     run_migrations_offline()
 else:

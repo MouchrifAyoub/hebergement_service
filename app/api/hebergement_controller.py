@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query
 from uuid import UUID
 from typing import List, Optional
 
@@ -21,12 +21,12 @@ UTILISATEUR_ID_TEST = UUID("11111111-1111-1111-1111-111111111111")
 @router.post("/demandes-hebergement", response_model=DemandeHebergementOut, status_code=status.HTTP_201_CREATED)
 async def creer_demande_hebergement(
     payload: DemandeHebergementCreate,
-    utilisateur_id: UUID = UTILISATEUR_ID_TEST
+    demandeur_id: UUID  # doit être passé en query param
 ):
     repository = DemandeHebergementRepository(db=database)
     service = DemandeHebergementService(repository)
     try:
-        return await service.create_demande(payload, utilisateur_id)
+        return await service.create_demande(payload, demandeur_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -44,14 +44,13 @@ async def get_mes_demandes(statut: Optional[str] = None):
 async def update_demande_hebergement(
     id: UUID = Path(...),
     payload: DemandeHebergementUpdate = Body(...),
+    demandeur_id: UUID = Query(...),  # ✅ récupérer le bon ID transmis
 ):
     repository = DemandeHebergementRepository(db=database)
     service = DemandeHebergementService(repository)
-    utilisateur_id = UTILISATEUR_ID_TEST
     try:
-        data = {k: v for k, v in payload.dict().items() if v is not None}
-        result = await service.update_demande(id, utilisateur_id, data)
-        return result
+        data = {k: v for k, v in payload.model_dump().items() if v is not None}
+        return await service.update_demande(id, demandeur_id, data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -75,8 +74,7 @@ async def traiter_demande(
     repository = DemandeHebergementRepository(db=database)
     service = DemandeHebergementService(repository)
     try:
-        result = await service.traiter_demande(id, payload)
-        return result
+        return await service.traiter_demande(id, payload)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     

@@ -1,16 +1,25 @@
 import csv
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from fastapi import UploadFile
-
+from app.repositories.demande_hebergement_repository import DemandeHebergementRepository
 from app.repositories.invite_repository import InviteRepository
 from app.schemas.invite import InviteCreate, InviteOut
 
 class InviteService:
-    def __init__(self, repository: InviteRepository):
+    def __init__(self, repository: InviteRepository, demande_repo: Optional[DemandeHebergementRepository] = None):
         self.repository = repository
+        self.demande_repo = demande_repo
 
     async def add_invite(self, demande_id: UUID, invite_data: InviteCreate) -> InviteOut:
+        if self.demande_repo:
+            demande = await self.demande_repo.get_by_id(demande_id)
+            if not demande:
+                raise ValueError("Demande d’hébergement associée introuvable.")
+            
+        if invite_data.date_arrivee >= invite_data.date_depart:
+            raise ValueError("La date d’arrivée doit être antérieure à la date de départ.")
+
         is_dispo = await self.check_disponibilite(
             invite_data.type_hebergement,
             invite_data.date_arrivee,
@@ -30,11 +39,12 @@ class InviteService:
             invite_data.telephone,
             invite_data.type_hebergement
         )
-        return InviteOut(**invite.__dict__)
+        return InviteOut.model_validate(invite)
+
 
     async def get_invites_for_demande(self, demande_id: UUID) -> List[InviteOut]:
         invites = await self.repository.get_by_demande_id(demande_id)
-        return [InviteOut(**i.__dict__) for i in invites]
+        return [InviteOut.model_validate(i) for i in invites]
 
     async def import_from_csv(self, demande_id: UUID, csv_file: UploadFile):
         content = await csv_file.read()

@@ -1,6 +1,8 @@
 from datetime import date
 from uuid import UUID
 from pydantic import BaseModel
+from app.enums.type_hebergement import TypeHebergement
+
 
 class InviteCreate(BaseModel):
     nom: str
@@ -20,7 +22,7 @@ class InviteOut(BaseModel):
     fonction: str
     email: str
     telephone: str
-    type_hebergement: str
+    type_hebergement: TypeHebergement
     date_arrivee: date
     date_depart: date
 
