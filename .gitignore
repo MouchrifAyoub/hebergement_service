@@ -1,0 +1,31 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Alembic cache
+alembic/versions/__pycache__/
+alembic/__pycache__/
+
+# Virtual environments
+.env
+.venv
+venv/
+ENV/
+
+# Logs
+*.log
+
+# Pytest cache
+.pytest_cache/
+
+# IDEs & tools
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local override files
+*.local
